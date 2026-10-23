@@ -31,7 +31,7 @@ jobs:
       - name: Installa Cordova
         run: npm install -g cordova
 
-      - name: Crea progetto, CONFIGURA L'ICONA e compila
+      - name: Crea progetto, SOVRASCRIVI l'icona e compila
         run: |
           # 1. Crea il progetto
           cordova create app com.tuonome.carrelloubriaco "Carrello Ubriaco"
@@ -41,29 +41,16 @@ jobs:
           cp manifest.json app/www/manifest.json
           cp sw.js app/www/sw.js
           
-          # 3. Prepara la cartella delle risorse per l'icona
-          mkdir -p app/res/icon/android
-          cp logo.png app/res/icon/android/ldpi.png
-          cp logo.png app/res/icon/android/mdpi.png
-          cp logo.png app/res/icon/android/hdpi.png
-          cp logo.png app/res/icon/android/xhdpi.png
-          cp logo.png app/res/icon/android/xxhdpi.png
-          cp logo.png app/res/icon/android/xxxhdpi.png
-          
-          # 4. Entra nella cartella e modifica il config.xml PRIMA di aggiungere la piattaforma
+          # 3. Entra nella cartella e aggiungi la piattaforma Android
           cd app
-          
-          # Rimuove eventuali righe di splash screen che danno fastidio
-          sed -i '/SplashScreen/d' config.xml
-          
-          # Aggiunge le righe <icon> nel config.xml (questo è il modo ufficiale)
-          # Usiamo un blocco unico per evitare errori di sintassi
-          sed -i 's|<platform name="android">|<platform name="android">\n        <icon src="res/icon/android/ldpi.png" density="ldpi" />\n        <icon src="res/icon/android/mdpi.png" density="mdpi" />\n        <icon src="res/icon/android/hdpi.png" density="hdpi" />\n        <icon src="res/icon/android/xhdpi.png" density="xhdpi" />\n        <icon src="res/icon/android/xxhdpi.png" density="xxhdpi" />\n        <icon src="res/icon/android/xxxhdpi.png" density="xxxhdpi" />|' config.xml
-          
-          # 5. ORA aggiunge la piattaforma Android (così legge il config.xml già modificato)
           cordova platform add android
           
-          # 6. Compila
+          # 4. TROVA E SOSTITUISCI A MANO TUTTE LE ICONE DI DEFAULT
+          #    Questo comando cerca tutti i file "ic_launcher.png" (le icone vere)
+          #    dentro la cartella di build e li rimpiazza col tuo logo.
+          find platforms/android/app/src/main/res -name "ic_launcher.png" -exec cp ../logo.png {} \;
+          
+          # 5. Compila
           cordova build android
 
       - name: Carica l'APK
