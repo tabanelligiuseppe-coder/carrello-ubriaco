@@ -31,26 +31,29 @@ jobs:
       - name: Installa Cordova
         run: npm install -g cordova
 
-      - name: Crea progetto, SOVRASCRIVI l'icona e compila
+      - name: Crea progetto e compila
         run: |
-          # 1. Crea il progetto
           cordova create app com.tuonome.carrelloubriaco "Carrello Ubriaco"
-          
-          # 2. Copia i file web
           cp index.html app/www/index.html
           cp manifest.json app/www/manifest.json
           cp sw.js app/www/sw.js
-          
-          # 3. Entra nella cartella e aggiungi la piattaforma Android
           cd app
           cordova platform add android
           
-          # 4. TROVA E SOSTITUISCI A MANO TUTTE LE ICONE DI DEFAULT
-          #    Questo comando cerca tutti i file "ic_launcher.png" (le icone vere)
-          #    dentro la cartella di build e li rimpiazza col tuo logo.
-          find platforms/android/app/src/main/res -name "ic_launcher.png" -exec cp ../logo.png {} \;
+          # DIAGNOSI: Prima di compilare, forziamo la copia dell'icona
+          # e poi stampiamo la lista dei file immagine per vedere se c'è.
+          echo "=== INIZIO DIAGNOSI ICONE ===" > ../diagnosi.txt
+          find platforms/android -name "*launcher*" -o -name "*icon*" >> ../diagnosi.txt
           
-          # 5. Compila
+          # Proviamo a sovrascrivere l'icona principale (quella che di solito si vede)
+          cp ../logo.png platforms/android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          cp ../logo.png platforms/android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          cp ../logo.png platforms/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          cp ../logo.png platforms/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          cp ../logo.png platforms/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          
+          echo "=== FINE DIAGNOSI ===" >> ../diagnosi.txt
+          
           cordova build android
 
       - name: Carica l'APK
@@ -58,3 +61,9 @@ jobs:
         with:
           name: app-release
           path: app/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Carica il file di diagnosi
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnosi
+          path: diagnosi.txt
