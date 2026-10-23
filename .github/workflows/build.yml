@@ -26,18 +26,34 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: ''   # <--- QUESTA È LA RIGA MAGICA
+          packages: ''
 
       - name: Installa Cordova
         run: npm install -g cordova
 
-      - name: Crea progetto e compila APK
+      - name: Crea progetto, configura icona e compila
         run: |
+          # Crea il progetto
           cordova create app com.tuonome.carrelloubriaco "Carrello Ubriaco"
+          
+          # Copia i file dell'app
           cp index.html app/www/index.html
           cp manifest.json app/www/manifest.json
           cp sw.js app/www/sw.js
           cp logo.png app/www/logo.png
+          
+          # Sostituisce l'icona di default con il tuo logo
+          cp logo.png app/res/icon/android/ldpi.png
+          cp logo.png app/res/icon/android/mdpi.png
+          cp logo.png app/res/icon/android/hdpi.png
+          cp logo.png app/res/icon/android/xhdpi.png
+          cp logo.png app/res/icon/android/xxhdpi.png
+          cp logo.png app/res/icon/android/xxxhdpi.png
+          
+          # Rimuove la schermata di avvio (splash screen) di default
+          rm -f app/res/screen/android/*.png
+          
+          # Compila l'APK
           cd app
           cordova platform add android
           cordova build android
