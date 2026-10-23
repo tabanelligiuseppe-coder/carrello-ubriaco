@@ -28,43 +28,31 @@ jobs:
         with:
           packages: ''
 
-      - name: Installa Cordova
-        run: npm install -g cordova
+      - name: Installa Cordova e cordova-res
+        run: |
+          npm install -g cordova
+          npm install -g cordova-res
 
-      - name: Crea progetto, configura icona e compila
+      - name: Crea progetto e genera icone automaticamente
         run: |
           # Crea il progetto
           cordova create app com.tuonome.carrelloubriaco "Carrello Ubriaco"
           
-          # Copia i file dell'app
+          # Copia i file web
           cp index.html app/www/index.html
           cp manifest.json app/www/manifest.json
           cp sw.js app/www/sw.js
-          cp logo.png app/www/logo.png
           
-          # Crea le cartelle per le icone di Android
-          mkdir -p app/res/icon/android
+          # Prepara la cartella resources come si aspetta cordova-res
+          mkdir -p app/resources
+          cp logo.png app/resources/icon.png
           
-          # Copia il logo in tutte le risoluzioni richieste da Android
-          cp logo.png app/res/icon/android/ldpi.png
-          cp logo.png app/res/icon/android/mdpi.png
-          cp logo.png app/res/icon/android/hdpi.png
-          cp logo.png app/res/icon/android/xhdpi.png
-          cp logo.png app/res/icon/android/xxhdpi.png
-          cp logo.png app/res/icon/android/xxxhdpi.png
-          
-          # Configura il file config.xml per usare il logo
+          # Genera le icone automaticamente
           cd app
+          cordova-res android --skip-config --copy
+          
+          # Aggiungi la piattaforma e compila
           cordova platform add android
-          
-          # Aggiunge la configurazione dell'icona al config.xml
-          # Usiamo sed per inserire la riga prima della chiusura del tag <platform name="android">
-          sed -i 's|</platform>|<icon src="res/icon/android/ldpi.png" density="ldpi" /><icon src="res/icon/android/mdpi.png" density="mdpi" /><icon src="res/icon/android/hdpi.png" density="hdpi" /><icon src="res/icon/android/xhdpi.png" density="xhdpi" /><icon src="res/icon/android/xxhdpi.png" density="xxhdpi" /><icon src="res/icon/android/xxxhdpi.png" density="xxxhdpi" /></platform>|' config.xml
-          
-          # Rimuove le immagini di splash screen di default (opzionale)
-          rm -f res/screen/android/*.png 2>/dev/null || true
-          
-          # Compila
           cordova build android
 
       - name: Carica l'APK
