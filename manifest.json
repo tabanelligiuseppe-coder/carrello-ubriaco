@@ -1,0 +1,20 @@
+{
+  "name": "Il Carrello Ubriaco",
+  "short_name": "Carrello Ubriaco",
+  "description": "Lista della spesa, dispensa e ricette creative.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ed8936",
+  "theme_color": "#ed8936",
+  "lang": "it",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

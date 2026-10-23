@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Il Carrello Ubriaco 🛒</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ed8936">
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Carrello Ubriaco">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh; padding: 16px; color: #333;
+  }
+  .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow: hidden; }
+  header { background: #4a5568; color: #fff; padding: 20px; text-align: center; }
+  header h1 { font-size: 1.3rem; }
+  header p { font-size: 0.8rem; opacity: 0.8; margin-top: 4px; }
+  .tabs { display: flex; border-bottom: 1px solid #e2e8f0; overflow-x: auto; }
+  .tabs button { flex: 1; min-width: 70px; padding: 12px 4px; border: none; background: #f7fafc; font-size: 0.78rem; font-weight: 600; cursor: pointer; color: #718096; transition: all 0.2s; white-space: nowrap; }
+  .tabs button.active { background: #fff; color: #667eea; border-bottom: 3px solid #667eea; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .input-area { padding: 16px; display: flex; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid #e2e8f0; }
+  .input-area input[type="text"] { flex: 1; min-width: 120px; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 1rem; outline: none; }
+  .input-area input[type="text"]:focus { border-color: #667eea; }
+  .input-area input[type="number"] { width: 70px; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 1rem; outline: none; }
+  .input-area select { padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem; outline: none; background: #fff; }
+  #suggestions { padding: 0 16px 12px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .emoji-picker { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 6px; max-height: 130px; overflow-y: auto; }
+  .emoji-picker button { font-size: 1.4rem; background: #f7fafc; border: 2px solid transparent; border-radius: 8px; padding: 6px; cursor: pointer; }
+  .emoji-picker button:hover { background: #edf2f7; }
+  .emoji-picker button.selected { border-color: #667eea; background: #e6efff; transform: scale(1.1); }
+  .btn { padding: 12px 20px; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+  .btn-add { background: #48bb78; color: #fff; width: 100%; }
+  .btn-add:hover { background: #38a169; }
+  .btn-add-spesa { background: #ed8936; color: #fff; width: 100%; }
+  .btn-add-spesa:hover { background: #dd6b20; }
+  .btn-clear { background: #fc8181; color: #fff; margin: 16px; width: calc(100% - 32px); }
+  .btn-clear:hover { background: #f56565; }
+  .btn-genera { background: #667eea; color: #fff; width: 100%; font-size: 1.1rem; padding: 16px; }
+  .btn-genera:hover { background: #5a67d8; }
+  ul { list-style: none; padding: 0 16px; }
+  li { display: flex; align-items: center; gap: 10px; padding: 12px; border-bottom: 1px solid #e2e8f0; animation: slideIn 0.25s ease; }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+  li .emoji { font-size: 1.6rem; }
+  li .name { flex: 1; font-size: 1rem; }
+  li .qty { font-size: 0.85rem; color: #718096; background: #edf2f7; padding: 3px 8px; border-radius: 12px; }
+  li .base-badge { font-size: 0.7rem; background: #c6f6d5; color: #22543d; padding: 2px 6px; border-radius: 10px; font-weight: 600; }
+  li .actions { display: flex; gap: 4px; }
+  li .actions button { background: none; border: none; font-size: 1.15rem; cursor: pointer; padding: 4px 6px; border-radius: 6px; }
+  li .actions button:hover { background: #edf2f7; }
+  .empty { text-align: center; padding: 40px 20px; color: #a0aec0; font-size: 0.95rem; }
+  .counter { text-align: center; padding: 12px; font-size: 0.85rem; color: #718096; border-top: 1px solid #e2e8f0; }
+  .ricette-list { padding: 16px; }
+  .ricetta { border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; }
+  .ricetta:hover { border-color: #667eea; box-shadow: 0 4px 12px rgba(102,126,234,0.15); }
+  .ricetta .titolo { font-weight: 700; font-size: 1.05rem; margin-bottom: 6px; }
+  .ricetta .stato { display: inline-block; font-size: 0.75rem; padding: 3px 8px; border-radius: 20px; font-weight: 600; margin-bottom: 8px; }
+  .stato-ok { background: #c6f6d5; color: #22543d; }
+  .stato-quasi { background: #fefcbf; color: #744210; }
+  .stato-no { background: #fed7d7; color: #742a2a; }
+  .stato-generata { background: #e9d8fd; color: #44337a; }
+  .ricetta .ingredienti-mini { font-size: 0.85rem; color: #4a5568; line-height: 1.6; }
+  .ricetta .mancanti { color: #e53e3e; font-weight: 600; }
+  .ricetta-detail { padding: 16px; border-top: 2px solid #e2e8f0; background: #f7fafc; display: none; }
+  .ricetta.open .ricetta-detail { display: block; }
+  .ricetta-detail h3 { font-size: 1rem; margin: 12px 0 8px; color: #4a5568; }
+  .ricetta-detail h3:first-child { margin-top: 0; }
+  .ricetta-detail ul { padding-left: 20px; }
+  .ricetta-detail li { padding: 4px 0; border: none; font-size: 0.9rem; display: list-item; animation: none; }
+  .ricetta-detail ol { padding-left: 20px; }
+  .ricetta-detail ol li { display: list-item; font-size: 0.9rem; }
+  .badge-have { color: #38a169; font-weight: 600; }
+  .badge-miss { color: #e53e3e; font-weight: 600; }
+  .badge-base { color: #38a169; font-weight: 600; font-size: 0.75rem; }
+  .filter-bar { padding: 12px 16px; display: flex; gap: 8px; border-bottom: 1px solid #e2e8f0; }
+  .filter-bar button { flex: 1; padding: 8px; border: 2px solid #e2e8f0; background: #fff; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; color: #718096; }
+  .filter-bar button.active { border-color: #667eea; background: #e6efff; color: #667eea; }
+  .gen-box { padding: 16px; }
+  .gen-box h2 { font-size: 1.1rem; margin-bottom: 8px; color: #4a5568; }
+  .gen-box p { font-size: 0.85rem; color: #718096; margin-bottom: 16px; }
+  .gen-result { margin-top: 16px; }
+  .avviso { background: #fefcbf; border-left: 4px solid #ecc94b; padding: 12px; border-radius: 8px; font-size: 0.85rem; color: #744210; margin-bottom: 12px; }
+  .scartati { background: #fed7d7; border-left: 4px solid #fc8181; padding: 12px; border-radius: 8px; font-size: 0.85rem; color: #742a2a; margin-top: 12px; }
+  .base-info { background: #c6f6d5; border-left: 4px solid #48bb78; padding: 10px; border-radius: 8px; font-size: 0.8rem; color: #22543d; margin: 12px 16px; }
+  .vuota-spesa { text-align: center; padding: 30px 20px; color: #a0aec0; font-size: 0.95rem; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🛒 Il Carrello Ubriaco</h1>
+    <p>Compra, conserva, cucina</p>
+  </header>
+
+  <div class="tabs">
+    <button id="tabSpesa" class="active" onclick="switchTab('spesa')">🛍️ Spesa</button>
+    <button id="tabDispensa" onclick="switchTab('dispensa')">🧺 Dispensa</button>
+    <button id="tabGenera" onclick="switchTab('genera')">✨ Genera</button>
+    <button id="tabRicette" onclick="switchTab('ricette')">📖 Ricette</button>
+  </div>
+
+  <!-- TAB LISTA SPESA -->
+  <div id="contentSpesa" class="tab-content active">
+    <div class="input-area">
+      <input type="text" id="spesaName" placeholder="Da comprare..." maxlength="40">
+      <input type="number" id="spesaQty" placeholder="Qtà" min="0" step="1" value="1">
+      <select id="spesaUnit">
+        <option value="pz">pz</option>
+        <option value="g">g</option>
+        <option value="kg">kg</option>
+        <option value="ml">ml</option>
+        <option value="l">l</option>
+        <option value="cucchiai">cucchiai</option>
+        <option value="cucchiaini">cucchiaini</option>
+        <option value="tazze">tazze</option>
+        <option value="pizzico">pizzico</option>
+      </select>
+    </div>
+    <div id="spesaSuggestions"></div>
+    <div class="emoji-picker" id="spesaEmojiPicker"></div>
+    <div class="base-info">🧂 Gli ingredienti base (sale, pepe, olio...) sono sempre disponibili. Aggiungili qui solo se sono finiti!</div>
+    <div style="padding: 16px;">
+      <button class="btn btn-add-spesa" id="addSpesaBtn">🛍️ Aggiungi alla lista spesa</button>
+    </div>
+    <ul id="spesaList"></ul>
+    <div class="vuota-spesa" id="spesaEmpty">La lista è vuota. Aggiungi cosa devi comprare!</div>
+    <div class="counter" id="spesaCounter">0 articoli</div>
+    <button class="btn btn-clear" id="clearSpesaBtn">🗑️ Svuota lista</button>
+  </div>
+
+  <!-- TAB DISPENSA -->
+  <div id="contentDispensa" class="tab-content">
+    <div class="input-area">
+      <input type="text" id="itemName" placeholder="In casa..." maxlength="40">
+      <input type="number" id="itemQty" placeholder="Qtà" min="0" step="1" value="1">
+      <select id="itemUnit">
+        <option value="pz">pz</option>
+        <option value="g">g</option>
+        <option value="kg">kg</option>
+        <option value="ml">ml</option>
+        <option value="l">l</option>
+        <option value="cucchiai">cucchiai</option>
+        <option value="cucchiaini">cucchiaini</option>
+        <option value="tazze">tazze</option>
+        <option value="pizzico">pizzico</option>
+      </select>
+    </div>
+    <div id="suggestions"></div>
+    <div class="emoji-picker" id="emojiPicker"></div>
+    <div class="base-info">🧂 Sale, pepe, olio, aglio, aromi: sempre disponibili automaticamente. Aggiungili qui solo se vuoi.</div>
+    <div style="padding: 16px;">
+      <button class="btn btn-add" id="addBtn">➕ Aggiungi alla dispensa</button>
+    </div>
+    <ul id="list"></ul>
+    <div class="empty" id="empty">La dispensa è vuota. Aggiungi il primo ingrediente!</div>
+    <div class="counter" id="counter">0 ingredienti</div>
+    <button class="btn btn-clear" id="clearBtn">🗑️ Svuota dispensa</button>
+  </div>
+
+  <!-- TAB GENERA -->
+  <div id="contentGenera" class="tab-content">
+    <div class="gen-box">
+      <h2>✨ Inventa una ricetta</h2>
+      <p>Usa gli ingredienti della tua dispensa + quelli base sempre disponibili (sale, olio, aglio...).</p>
+      <button class="btn btn-genera" id="generaBtn">🎲 Genera ricetta</button>
+      <div class="gen-result" id="genResult"></div>
+    </div>
+  </div>
+
+  <!-- TAB RICETTE -->
+  <div id="contentRicette" class="tab-content">
+    <div class="filter-bar">
+      <button id="filtroTutte" class="active" onclick="setFiltro('tutte')">Tutte</button>
+      <button id="filtroFattibili" onclick="setFiltro('fattibili')">✅ Fattibili</button>
+      <button id="filtroQuasi" onclick="setFiltro('quasi')">⚠️ Quasi</button>
+    </div>
+    <div class="ricette-list" id="ricetteList"></div>
+  </div>
+</div>
+
+<script>
+  // ===== SEMPRE DISPONIBILI =====
+  const SEMPRE_DISPONIBILI = new Set([
+    "sale", "pepe", "olio", "aceto", "zucchero", "aglio",
+    "basilico", "prezzemolo", "rosmarino", "salvia", "origano",
+    "peperoncino", "farina", "acqua"
+  ]);
+  function isSempreDisponibile(nome) {
+    return SEMPRE_DISPONIBILI.has(nome.toLowerCase().trim());
+  }
+
+  // ===== INGREDIENTI =====
+  const INGREDIENTI = {
+    "pomodoro": {emoji:"🍅", cat:"verdura"}, "pomodori": {emoji:"🍅", cat:"verdura"},
+    "melanzana": {emoji:"🍆", cat:"verdura"}, "melanzane": {emoji:"🍆", cat:"verdura"},
+    "zucchina": {emoji:"🥒", cat:"verdura"}, "zucchine": {emoji:"🥒", cat:"verdura"},
+    "peperone": {emoji:"🫑", cat:"verdura"}, "peperoni": {emoji:"🫑", cat:"verdura"},
+    "carota": {emoji:"🥕", cat:"verdura"}, "carote": {emoji:"🥕", cat:"verdura"},
+    "patata": {emoji:"🥔", cat:"carboidrato"}, "patate": {emoji:"🥔", cat:"carboidrato"},
+    "cipolla": {emoji:"🧅", cat:"verdura"}, "cipolle": {emoji:"🧅", cat:"verdura"},
+    "aglio": {emoji:"🧄", cat:"aroma"},
+    "broccoli": {emoji:"🥦", cat:"verdura"}, "broccolo": {emoji:"🥦", cat:"verdura"},
+    "spinaci": {emoji:"🥬", cat:"verdura"}, "insalata": {emoji:"🥬", cat:"verdura"},
+    "lattuga": {emoji:"🥬", cat:"verdura"}, "cetriolo": {emoji:"🥒", cat:"verdura"},
+    "funghi": {emoji:"🍄", cat:"verdura"}, "fungo": {emoji:"🍄", cat:"verdura"},
+    "zucca": {emoji:"🎃", cat:"verdura"}, "mais": {emoji:"🌽", cat:"verdura"},
+    "peperoncino": {emoji:"🌶️", cat:"aroma"}, "olive": {emoji:"🫒", cat:"condimento"},
+    "fagiolini": {emoji:"🫘", cat:"verdura"}, "piselli": {emoji:"🫘", cat:"verdura"},
+    "ceci": {emoji:"🫘", cat:"proteina"}, "fagioli": {emoji:"🫘", cat:"proteina"},
+    "lenticchie": {emoji:"🫘", cat:"proteina"},
+    "mozzarella": {emoji:"🧀", cat:"latticino"}, "formaggio": {emoji:"🧀", cat:"latticino"},
+    "parmigiano": {emoji:"🧀", cat:"latticino"}, "ricotta": {emoji:"🧀", cat:"latticino"},
+    "philadelphia": {emoji:"🧀", cat:"latticino"}, "stracchino": {emoji:"🧀", cat:"latticino"},
+    "gorgonzola": {emoji:"🧀", cat:"latticino"}, "pecorino": {emoji:"🧀", cat:"latticino"},
+    "panna": {emoji:"🥛", cat:"latticino"}, "latte": {emoji:"🥛", cat:"latticino"},
+    "burro": {emoji:"🧈", cat:"condimento"}, "yogurt": {emoji:"🥛", cat:"latticino"},
+    "uova": {emoji:"🥚", cat:"uovo"}, "uovo": {emoji:"🥚", cat:"uovo"},
+    "pollo": {emoji:"🍗", cat:"proteina"}, "carne": {emoji:"🥩", cat:"proteina"},
+    "bistecca": {emoji:"🥩", cat:"proteina"}, "manzo": {emoji:"🥩", cat:"proteina"},
+    "maiale": {emoji:"🥩", cat:"proteina"}, "tacchino": {emoji:"🦃", cat:"proteina"},
+    "pancetta": {emoji:"🥓", cat:"salume"}, "prosciutto": {emoji:"🥓", cat:"salume"},
+    "salame": {emoji:"🥓", cat:"salume"}, "mortadella": {emoji:"🥓", cat:"salume"},
+    "salsiccia": {emoji:"🌭", cat:"salume"}, "wurstel": {emoji:"🌭", cat:"salume"},
+    "ciccioli": {emoji:"🥓", cat:"salume"}, "guanciale": {emoji:"🥓", cat:"salume"},
+    "salmone": {emoji:"🐟", cat:"pesce"}, "tonno": {emoji:"🐟", cat:"pesce"},
+    "pesce": {emoji:"🐟", cat:"pesce"}, "gamberi": {emoji:"🍤", cat:"pesce"},
+    "polpo": {emoji:"🐙", cat:"pesce"}, "calamari": {emoji:"🦑", cat:"pesce"},
+    "pasta": {emoji:"🍝", cat:"carboidrato"}, "spaghetti": {emoji:"🍝", cat:"carboidrato"},
+    "penne": {emoji:"🍝", cat:"carboidrato"}, "riso": {emoji:"🍚", cat:"carboidrato"},
+    "pane": {emoji:"🍞", cat:"carboidrato"}, "gnocchi": {emoji:"🥟", cat:"carboidrato"},
+    "farina": {emoji:"🌾", cat:"carboidrato"}, "pizza": {emoji:"🍕", cat:"carboidrato"},
+    "olio": {emoji:"🫒", cat:"condimento"}, "sale": {emoji:"🧂", cat:"condimento"},
+    "pepe": {emoji:"🧂", cat:"condimento"}, "aceto": {emoji:"🧂", cat:"condimento"},
+    "passata": {emoji:"🥫", cat:"condimento"}, "pelati": {emoji:"🥫", cat:"condimento"},
+    "pesto": {emoji:"🥫", cat:"condimento"}, "maionese": {emoji:"🥫", cat:"condimento"},
+    "ketchup": {emoji:"🥫", cat:"condimento"}, "senape": {emoji:"🥫", cat:"condimento"},
+    "brodo": {emoji:"🍲", cat:"condimento"}, "vino bianco": {emoji:"🍷", cat:"condimento"},
+    "vino rosso": {emoji:"🍷", cat:"condimento"}, "zucchero": {emoji:"🧂", cat:"condimento"},
+    "miele": {emoji:"🍯", cat:"condimento"},
+    "basilico": {emoji:"🌿", cat:"aroma"}, "prezzemolo": {emoji:"🌿", cat:"aroma"},
+    "rosmarino": {emoji:"🌿", cat:"aroma"}, "salvia": {emoji:"🌿", cat:"aroma"},
+    "origano": {emoji:"🌿", cat:"aroma"}, "limone": {emoji:"🍋", cat:"aroma"},
+    "cracker": {emoji:"🍘", cat:"carboidrato"}, "biscotti": {emoji:"🍪", cat:"carboidrato"},
+    "cereali": {emoji:"🥣", cat:"carboidrato"}
+  };
+
+  function trovaIngrediente(nome) {
+    const n = nome.toLowerCase().trim();
+    if (!n) return null;
+    if (INGREDIENTI[n]) return { ...INGREDIENTI[n], nome: n };
+    for (const [k, v] of Object.entries(INGREDIENTI)) {
+      if (n.includes(k) || k.includes(n)) return { ...v, nome: k };
+    }
+    return null;
+  }
+
+  function trovaEmoji(nome) {
+    const n = nome.toLowerCase().trim();
+    if (!n) return null;
+    if (INGREDIENTI[n]) return { emoji: INGREDIENTI[n].emoji, suggerimenti: [{ emoji: INGREDIENTI[n].emoji }] };
+    const candidati = [];
+    for (const [k, v] of Object.entries(INGREDIENTI)) {
+      if (n.includes(k) || k.includes(n)) candidati.push({ emoji: v.emoji, lunghezza: k.length });
+    }
+    if (candidati.length === 0) return null;
+    candidati.sort((a, b) => b.lunghezza - a.lunghezza);
+    const unici = []; const visti = new Set();
+    for (const c of candidati) { if (!visti.has(c.emoji)) { unici.push(c); visti.add(c.emoji); } }
+    return { emoji: unici[0].emoji, suggerimenti: unici.slice(0, 5) };
+  }
+
+  const INCOMPATIBILI = [["pesce","salume"],["pesce","proteina"]];
+  function sonoCompatibili(catA, catB) {
+    if (catA === catB) return true;
+    return !INCOMPATIBILI.some(([a, b]) => (catA === a && catB === b) || (catA === b && catB === a));
+  }
+
+  // ===== STATO =====
+  let selectedEmojiSpesa = "🛒";
+  let selectedEmojiDispensa = "🛒";
+  let listaSpesa = JSON.parse(localStorage.getItem("listaSpesa") || "[]");
+  let dispensa = JSON.parse(localStorage.getItem("dispensaItems") || "[]");
+  let filtro = "tutte";
+  const EMOJIS_FALLBACK = ["🛒","🍎","🥦","🍞","🥛","🧀","🍗","🐟","🍝","🍚","🍕","🥤","🍫","🧴","💧","🥚","🍅","🥔","🧅","🫘","🌿","🍋"];
+
+  function saveSpesa() { localStorage.setItem("listaSpesa", JSON.stringify(listaSpesa)); }
+  function saveDispensa() { localStorage.setItem("dispensaItems", JSON.stringify(dispensa)); }
+
+  function switchTab(tab) {
+    document.querySelectorAll(".tab-content").forEach(x => x.classList.remove("active"));
+    document.querySelectorAll(".tabs button").forEach(x => x.classList.remove("active"));
+    const map = {spesa:"Spesa", dispensa:"Dispensa", genera:"Genera", ricette:"Ricette"};
+    document.getElementById("content" + map[tab]).classList.add("active");
+    document.getElementById("tab" + map[tab]).classList.add("active");
+    if (tab === "ricette") renderRicette();
+  }
+
+  // ===== PICKER SPESA =====
+  const spesaPicker = document.getElementById("spesaEmojiPicker");
+  EMOJIS_FALLBACK.forEach(e => {
+    const b = document.createElement("button");
+    b.textContent = e;
+    b.dataset.emoji = e;
+    if (e === selectedEmojiSpesa) b.classList.add("selected");
+    b.onclick = () => {
+      selectedEmojiSpesa = e;
+      document.querySelectorAll("#spesaEmojiPicker button").forEach(x => x.classList.remove("selected"));
+      b.classList.add("selected");
+      document.getElementById("spesaSuggestions").innerHTML = "";
+    };
+    spesaPicker.appendChild(b);
+  });
+
+  // ===== PICKER DISPENSA =====
+  const dispensaPicker = document.getElementById("emojiPicker");
+  EMOJIS_FALLBACK.forEach(e => {
+    const b = document.createElement("button");
+    b.textContent = e;
+    b.dataset.emoji = e;
+    if (e === selectedEmojiDispensa) b.classList.add("selected");
+    b.onclick = () => {
+      selectedEmojiDispensa = e;
+      document.querySelectorAll("#emojiPicker button").forEach(x => x.classList.remove("selected"));
+      b.classList.add("selected");
+      document.getElementById("suggestions").innerHTML = "";
+    };
+    dispensaPicker.appendChild(b);
+  });
+
+  // ===== AUTO-EMOJI =====
+  const spesaInput = document.getElementById("spesaName");
+  const spesaSug = document.getElementById("spesaSuggestions");
+  spesaInput.addEventListener("input", () => {
+    const res = trovaEmoji(spesaInput.value);
+    spesaSug.innerHTML = "";
+    if (!res) {
+      selectedEmojiSpesa = "🛒";
+      document.querySelectorAll("#spesaEmojiPicker button").forEach(x => {
+        x.classList.toggle("selected", x.dataset.emoji === "🛒");
+      });
+      return;
+    }
+    selectedEmojiSpesa = res.emoji;
+    document.querySelectorAll("#spesaEmojiPicker button").forEach(x => {
+      x.classList.toggle("selected", x.dataset.emoji === selectedEmojiSpesa);
+    });
+    res.suggerimenti.forEach(s => {
+      const b = document.createElement("button");
+      b.textContent = s.emoji;
+      b.style.cssText = "font-size:1.5rem;background:#f7fafc;border:2px solid transparent;border-radius:8px;padding:4px 8px;cursor:pointer;";
+      if (s.emoji === res.emoji) b.style.borderColor = "#ed8936";
+      b.onclick = () => {
+        selectedEmojiSpesa = s.emoji;
+        document.querySelectorAll("#spesaSuggestions button").forEach(x => x.style.borderColor = "transparent");
+        b.style.borderColor = "#ed8936";
+        document.querySelectorAll("#spesaEmojiPicker button").forEach(x => {
+          x.classList.toggle("selected", x.dataset.emoji === selectedEmojiSpesa);
+        });
+      };
+      spesaSug.appendChild(b);
+    });
+  });
+
+  const dispInput = document.getElementById("itemName");
+  const dispSug = document.getElementById("suggestions");
+  dispInput.addEventListener("input", () => {
+    const res = trovaEmoji(dispInput.value);
+    dispSug.innerHTML = "";
+    if (!res) {
+      selectedEmojiDispensa = "🛒";
+      document.querySelectorAll("#emojiPicker button").forEach(x => {
+        x.classList.toggle("selected", x.dataset.emoji === "🛒");
+      });
+      return;
+    }
+    selectedEmojiDispensa = res.emoji;
+    document.querySelectorAll("#emojiPicker button").forEach(x => {
+      x.classList.toggle("selected", x.dataset.emoji === selectedEmojiDispensa);
+    });
+    res.suggerimenti.forEach(s => {
+      const b = document.createElement("button");
+      b.textContent = s.emoji;
+      b.style.cssText = "font-size:1.5rem;background:#f7fafc;border:2px solid transparent;border-radius:8px;padding:4px 8px;cursor:pointer;";
+      if (s.emoji === res.emoji) b.style.borderColor = "#667eea";
+      b.onclick = () => {
+        selectedEmojiDispensa = s.emoji;
+        document.querySelectorAll("#suggestions button").forEach(x => x.style.borderColor = "transparent");
+        b.style.borderColor = "#667eea";
+        document.querySelectorAll("#emojiPicker button").forEach(x => {
+          x.classList.toggle("selected", x.dataset.emoji === selectedEmojiDispensa);
+        });
+      };
+      dispSug.appendChild(b);
+    });
+  });
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  }
+
+  function renderSpesa() {
+    const list = document.getElementById("spesaList");
+    const empty = document.getElementById("spesaEmpty");
+    const counter = document.getElementById("spesaCounter");
+    list.innerHTML = "";
+    empty.style.display = listaSpesa.length === 0 ? "block" : "none";
+    listaSpesa.forEach((item, i) => {
+      const li = document.createElement("li");
+      const qtyStr = item.qty ? `${item.qty} ${item.unit || "pz"}` : "";
+      const isBase = isSempreDisponibile(item.name);
+      li.innerHTML = `
+        <span class="emoji">${item.emoji}</span>
+        <span class="name">${escapeHtml(item.name)}</span>
+        ${isBase ? `<span class="base-badge">base</span>` : ""}
+        ${qtyStr ? `<span class="qty">${qtyStr}</span>` : ""}
+        <span class="actions">
+          <button title="Comprato → Dispensa" data-i="${i}" class="comprato">✅</button>
+          <button title="Elimina" data-i="${i}" class="delSpesa">🗑️</button>
+        </span>`;
+      list.appendChild(li);
+    });
+    counter.textContent = listaSpesa.length === 0 ? "0 articoli" : `${listaSpesa.length} articoli`;
+  }
+
+  function renderDispensa() {
+    const list = document.getElementById("list");
+    const empty = document.getElementById("empty");
+    const counter = document.getElementById("counter");
+    list.innerHTML = "";
+    empty.style.display = dispensa.length === 0 ? "block" : "none";
+    dispensa.forEach((item, i) => {
+      const li = document.createElement("li");
+      const qtyStr = item.qty ? `${item.qty} ${item.unit || "pz"}` : "";
+      const isBase = isSempreDisponibile(item.name);
+      li.innerHTML = `
+        <span class="emoji">${item.emoji}</span>
+        <span class="name">${escapeHtml(item.name)}</span>
+        ${isBase ? `<span class="base-badge">base</span>` : ""}
+        ${qtyStr ? `<span class="qty">${qtyStr}</span>` : ""}
+        <span class="actions">
+          <button title="Finito → Lista spesa" data-i="${i}" class="finito">🔄</button>
+          <button title="Elimina" data-i="${i}" class="delDisp">🗑️</button>
+        </span>`;
+      list.appendChild(li);
+    });
+    counter.textContent = dispensa.length === 0 ? "0 ingredienti" : `${dispensa.length} ingredienti`;
+  }
+
+  document.getElementById("addSpesaBtn").onclick = () => {
+    const name = spesaInput.value.trim();
+    if (!name) return;
+    let emoji = selectedEmojiSpesa;
+    if (emoji === "🛒") {
+      const res = trovaEmoji(name);
+      emoji = res ? res.emoji : "🛒";
+    }
+    const qty = parseFloat(document.getElementById("spesaQty").value) || 0;
+    const unit = document.getElementById("spesaUnit").value;
+    listaSpesa.push({ emoji, name, qty, unit });
+    spesaInput.value = "";
+    document.getElementById("spesaQty").value = "1";
+    spesaSug.innerHTML = "";
+    selectedEmojiSpesa = "🛒";
+    document.querySelectorAll("#spesaEmojiPicker button").forEach(x => {
+      x.classList.toggle("selected", x.dataset.emoji === "🛒");
+    });
+    saveSpesa();
+    renderSpesa();
+  };
+  spesaInput.addEventListener("keydown", e => { if (e.key === "Enter") document.getElementById("addSpesaBtn").click(); });
+
+  document.getElementById("spesaList").addEventListener("click", e => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    const i = parseInt(btn.dataset.i);
+    if (btn.classList.contains("comprato")) {
+      const item = listaSpesa.splice(i, 1)[0];
+      if (!isSempreDisponibile(item.name)) {
+        dispensa.push(item);
+        saveDispensa();
+        renderDispensa();
+      }
+      saveSpesa(); renderSpesa();
+    } else if (btn.classList.contains("delSpesa")) {
+      listaSpesa.splice(i, 1);
+      saveSpesa(); renderSpesa();
+    }
+  });
+
+  document.getElementById("clearSpesaBtn").onclick = () => {
+    if (listaSpesa.length === 0) return;
+    if (confirm("Svuotare tutta la lista della spesa?")) { listaSpesa = []; saveSpesa(); renderSpesa(); }
+  };
+
+  document.getElementById("addBtn").onclick = () => {
+    const name = dispInput.value.trim();
+    if (!name) return;
+    let emoji = selectedEmojiDispensa;
+    if (emoji === "🛒") {
+      const res = trovaEmoji(name);
+      emoji = res ? res.emoji : "🛒";
+    }
+    const qty = parseFloat(document.getElementById("itemQty").value) || 0;
+    const unit = document.getElementById("itemUnit").value;
+    dispensa.push({ emoji, name, qty, unit });
+    dispInput.value = "";
+    document.getElementById("itemQty").value = "1";
+    dispSug.innerHTML = "";
+    selectedEmojiDispensa = "🛒";
+    document.querySelectorAll("#emojiPicker button").forEach(x => {
+      x.classList.toggle("selected", x.dataset.emoji === "🛒");
+    });
+    saveDispensa();
+    renderDispensa();
+  };
+  dispInput.addEventListener("keydown", e => { if (e.key === "Enter") document.getElementById("addBtn").click(); });
+
+  document.getElementById("list").addEventListener("click", e => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    const i = parseInt(btn.dataset.i);
+    if (btn.classList.contains("finito")) {
+      const item = dispensa.splice(i, 1)[0];
+      listaSpesa.push(item);
+      saveDispensa(); saveSpesa();
+      renderDispensa(); renderSpesa();
+    } else if (btn.classList.contains("delDisp")) {
+      dispensa.splice(i, 1);
+      saveDispensa(); renderDispensa();
+    }
+  });
+
+  document.getElementById("clearBtn").onclick = () => {
+    if (dispensa.length === 0) return;
+    if (confirm("Svuotare tutta la dispensa?")) { dispensa = []; saveDispensa(); renderDispensa(); }
+  };
+
+  // ===== GENERATORE =====
+  function generaRicetta() {
+    const res = document.getElementById("genResult");
+    if (dispensa.length === 0) {
+      res.innerHTML = `<div class="avviso">Aggiungi prima qualche ingrediente alla dispensa! Gli ingredienti base (sale, olio, aglio...) ci sono già.</div>`;
+      return;
+    }
+    const perCat = {};
+    dispensa.forEach(d => {
+      const info = trovaIngrediente(d.name);
+      const cat = info ? info.cat : "altro";
+      if (!perCat[cat]) perCat[cat] = [];
+      perCat[cat].push({ ...d, cat });
+    });
+
+    const proteineDisponibili = [...(perCat.pesce || []), ...(perCat.proteina || []), ...(perCat.uovo || [])];
+    const carbs = perCat.carboidrato || [];
+    const verdure = perCat.verdura || [];
+    const latticini = perCat.latticino || [];
+    const condimenti = perCat.condimento || [];
+    const aromi = perCat.aroma || [];
+    const scelti = []; const scartati = [];
+
+    let proteina = null;
+    if (proteineDisponibili.length > 0) {
+      proteina = proteineDisponibili[Math.floor(Math.random() * proteineDisponibili.length)];
+      scelti.push(proteina);
+    }
+    const verdureOk = verdure.filter(v => !proteina || sonoCompatibili(proteina.cat, v.cat));
+    const numVerdure = Math.min(verdureOk.length, 2);
+    for (let i = 0; i < numVerdure; i++) {
+      const idx = Math.floor(Math.random() * verdureOk.length);
+      scelti.push(verdureOk.splice(idx, 1)[0]);
+    }
+    verdure.forEach(v => { if (!scelti.includes(v)) scartati.push(v); });
+    if (carbs.length > 0) scelti.push(carbs[Math.floor(Math.random() * carbs.length)]);
+    if (latticini.length > 0) scelti.push(latticini[Math.floor(Math.random() * latticini.length)]);
+    const numCond = Math.min(condimenti.length, 2);
+    for (let i = 0; i < numCond; i++) {
+      const idx = Math.floor(Math.random() * condimenti.length);
+      scelti.push(condimenti.splice(idx, 1)[0]);
+    }
+    if (aromi.length > 0) scelti.push(aromi[Math.floor(Math.random() * aromi.length)]);
+    const salumi = perCat.salume || [];
+    salumi.forEach(s => {
+      if (proteina && proteina.cat === "pesce") scartati.push(s);
+      else if (scelti.length < 7) scelti.push(s);
+      else scartati.push(s);
+    });
+    if (scelti.length === 0) {
+      res.innerHTML = `<div class="avviso">Non ho abbastanza ingredienti per inventare una ricetta.</div>`;
+      return;
+    }
+
+    const baseDaMostrare = [...SEMPRE_DISPONIBILI].filter(b =>
+      !scelti.some(s => s.name.toLowerCase().includes(b))
+    );
+
+    const nomeRicetta = costruisciNome(scelti);
+    const procedimento = costruisciProcedimento(scelti);
+
+    let html = `<div class="ricetta open" style="cursor:default;">
+      <div class="titolo">${nomeRicetta}</div>
+      <span class="stato stato-generata">✨ Inventata per te</span>
+      <div class="ingredienti-mini">
+        ${scelti.map(s => `<span class="badge-have">${s.emoji} ${s.name}${s.qty ? " (" + s.qty + " " + s.unit + ")" : ""}</span>`).join(", ")}
+        ${baseDaMostrare.length > 0 ? `<br><span class="badge-base">+ base: ${baseDaMostrare.slice(0, 4).join(", ")}${baseDaMostrare.length > 4 ? "..." : ""}</span>` : ""}
+      </div>
+      <div class="ricetta-detail" style="display:block;">
+        <h3>👨‍🍳 Procedimento</h3>
+        <ol>${procedimento.map(p => `<li>${p}</li>`).join("")}</ol>
+      </div>
+    </div>`;
+    if (scartati.length > 0) {
+      html += `<div class="scartati"><strong>🚫 Ho scartato:</strong> ${scartati.map(s => s.name).join(", ")} — non si abbinano bene con gli altri ingredienti scelti.</div>`;
+    }
+    res.innerHTML = html;
+  }
+
+  function costruisciNome(scelti) {
+    const cat = {};
+    scelti.forEach(s => { cat[s.cat] = s.name; });
+    const base = cat.carboidrato || cat.verdura || "Piatto";
+    const prot = cat.pesce || cat.proteina || cat.uovo || "";
+    const verd = cat.verdura || "";
+    let nome = "";
+    if (prot && base) nome = `${base.charAt(0).toUpperCase() + base.slice(1)} con ${prot}`;
+    else if (prot) nome = `${prot.charAt(0).toUpperCase() + prot.slice(1)} ${verd ? "e " + verd : "in padella"}`;
+    else if (base) nome = `${base.charAt(0).toUpperCase() + base.slice(1)} ${verd ? "e " + verd : "semplicissimo"}`;
+    else nome = "Piatto creativo";
+    return nome;
+  }
+
+  function costruisciProcedimento(scelti) {
+    const passi = []; const cat = {};
+    scelti.forEach(s => { cat[s.cat] = s; });
+    if (cat.carboidrato) {
+      const c = cat.carboidrato.name;
+      if (c.includes("pasta") || c.includes("spaghetti") || c.includes("penne") || c.includes("gnocchi"))
+        passi.push(`Metti a bollire l'acqua salata e cuoci ${c}.`);
+      else if (c.includes("riso")) passi.push(`Tosta il riso in padella con un filo d'olio.`);
+      else passi.push(`Prepara ${c} come base del piatto.`);
+    }
+    if (cat.condimento) passi.push(`Scalda ${cat.condimento.name} in una padella capiente.`);
+    if (cat.aroma) passi.push(`Aggiungi ${cat.aroma.name} per profumare.`);
+    if (cat.verdura) {
+      passi.push(`Taglia ${cat.verdura.name} e aggiungilo in padella.`);
+      passi.push(`Cuoci 5-7 minuti a fuoco medio.`);
+    }
+    if (cat.pesce || cat.proteina || cat.uovo) {
+      const p = (cat.pesce || cat.proteina || cat.uovo).name;
+      passi.push(`Aggiungi ${p} e cuoci finché non è pronto (circa 10 minuti).`);
+    }
+    if (cat.latticino) passi.push(`Manteca con ${cat.latticino.name} fuori dal fuoco.`);
+    if (cat.salume) passi.push(`Aggiungi ${cat.salume.name} a pezzetti per insaporire.`);
+    if (cat.carboidrato) passi.push(`Unisci il tutto e servi caldo.`);
+    else passi.push(`Servi ben caldo con un filo d'olio a crudo.`);
+    return passi;
+  }
+
+  // ===== RICETTARIO =====
+  const RICETTE = [
+    { nome: "Pasta al pomodoro", ingredienti: [{nome:"pasta",qty:320,unit:"g"},{nome:"pomodoro",qty:400,unit:"g"},{nome:"olio",qty:2,unit:"cucchiai"},{nome:"aglio",qty:2,unit:"pz"},{nome:"sale",qty:1,unit:"pizzico"}], procedimento:["Metti a bollire l'acqua salata.","Scalda l'olio con l'aglio.","Aggiungi i pomodori e cuoci 10 minuti.","Scola la pasta e saltala in padella."] },
+    { nome: "Spaghetti aglio e olio", ingredienti: [{nome:"pasta",qty:320,unit:"g"},{nome:"aglio",qty:3,unit:"pz"},{nome:"olio",qty:4,unit:"cucchiai"},{nome:"peperoncino",qty:1,unit:"pz"},{nome:"sale",qty:1,unit:"pizzico"}], procedimento:["Cuoci gli spaghetti.","Scalda olio con aglio e peperoncino.","Scola e salta la pasta."] },
+    { nome: "Pasta alla carbonara", ingredienti: [{nome:"pasta",qty:320,unit:"g"},{nome:"uova",qty:3,unit:"pz"},{nome:"pancetta",qty:150,unit:"g"},{nome:"pecorino",qty:80,unit:"g"},{nome:"pepe",qty:1,unit:"pizzico"}], procedimento:["Cuoci la pasta.","Rosola la pancetta.","Sbatti uova con pecorino.","Unisci fuori dal fuoco."] },
+    { nome: "Insalata caprese", ingredienti: [{nome:"mozzarella",qty:250,unit:"g"},{nome:"pomodoro",qty:300,unit:"g"},{nome:"basilico",qty:1,unit:"pz"},{nome:"olio",qty:2,unit:"cucchiai"},{nome:"sale",qty:1,unit:"pizzico"}], procedimento:["Taglia mozzarella e pomodori.","Alterna su un piatto.","Condisci con olio, sale e basilico."] },
+    { nome: "Frittata di uova e formaggio", ingredienti: [{nome:"uova",qty:4,unit:"pz"},{nome:"formaggio",qty:50,unit:"g"},{nome:"sale",qty:1,unit:"pizzico"},{nome:"olio",qty:2,unit:"cucchiai"}], procedimento:["Sbatti le uova.","Scalda l'olio.","Cuoci la frittata."] },
+    { nome: "Salmone al forno", ingredienti: [{nome:"salmone",qty:400,unit:"g"},{nome:"limone",qty:1,unit:"pz"},{nome:"olio",qty:2,unit:"cucchiai"},{nome:"sale",qty:1,unit:"pizzico"},{nome:"rosmarino",qty:1,unit:"pz"}], procedimento:["Disponi il salmone su carta forno.","Condisci con olio, limone e rosmarino.","Cuoci a 180°C per 15 minuti."] },
+    { nome: "Patate al forno", ingredienti: [{nome:"patata",qty:600,unit:"g"},{nome:"olio",qty:3,unit:"cucchiai"},{nome:"sale",qty:1,unit:"pizzico"},{nome:"rosmarino",qty:1,unit:"pz"}], procedimento:["Taglia le patate a spicchi.","Condisci.","Cuoci a 200°C per 35 minuti."] },
+    { nome: "Pasta e lenticchie", ingredienti: [{nome:"pasta",qty:200,unit:"g"},{nome:"lenticchie",qty:200,unit:"g"},{nome:"cipolla",qty:1,unit:"pz"},{nome:"passata",qty:200,unit:"g"},{nome:"olio",qty:2,unit:"cucchiai"},{nome:"sale",qty:1,unit:"pizzico"}], procedimento:["Soffriggi la cipolla.","Aggiungi lenticchie e passata.","Cuoci la pasta nel sugo."] },
+    { nome: "Risotto ai funghi", ingredienti: [{nome:"riso",qty:320,unit:"g"},{nome:"funghi",qty:300,unit:"g"},{nome:"cipolla",qty:1,unit:"pz"},{nome:"brodo",qty:1,unit:"l"},{nome:"parmigiano",qty:60,unit:"g"},{nome:"burro",qty:30,unit:"g"}], procedimento:["Soffriggi la cipolla.","Tosta il riso con i funghi.","Bagna col brodo.","Manteca."] },
+    { nome: "Pollo al limone", ingredienti: [{nome:"pollo",qty:500,unit:"g"},{nome:"limone",qty:2,unit:"pz"},{nome:"olio",qty:3,unit:"cucchiai"},{nome:"sale",qty:1,unit:"pizzico"}], procedimento:["Rosola il pollo.","Sfuma col limone.","Cuoci 10 minuti."] },
+    { nome: "Verdure grigliate", ingredienti: [{nome:"melanzana",qty:2,unit:"pz"},{nome:"zucchina",qty:2,unit:"pz"},{nome:"peperone",qty:1,unit:"pz"},{nome:"olio",qty:3,unit:"cucchiai"},{nome:"sale",qty:1,unit:"pizzico"}], procedimento:["Taglia le verdure.","Grigliale.","Condisci."] },
+    { nome: "Tonno e fagioli", ingredienti: [{nome:"tonno",qty:160,unit:"g"},{nome:"fagioli",qty:200,unit:"g"},{nome:"cipolla",qty:1,unit:"pz"},{nome:"olio",qty:2,unit:"cucchiai"}], procedimento:["Scola tonno e fagioli.","Unisci con cipolla.","Condisci."] },
+    { nome: "Pasta e ceci", ingredienti: [{nome:"pasta",qty:200,unit:"g"},{nome:"ceci",qty:200,unit:"g"},{nome:"aglio",qty:2,unit:"pz"},{nome:"rosmarino",qty:1,unit:"pz"},{nome:"olio",qty:2,unit:"cucchiai"}], procedimento:["Soffriggi aglio e rosmarino.","Aggiungi ceci.","Cuoci la pasta nel brodo."] },
+    { nome: "Panzanella", ingredienti: [{nome:"pane",qty:200,unit:"g"},{nome:"pomodoro",qty:300,unit:"g"},{nome:"cetriolo",qty:1,unit:"pz"},{nome:"cipolla",qty:1,unit:"pz"},{nome:"olio",qty:3,unit:"cucchiai"},{nome:"aceto",qty:2,unit:"cucchiai"}], procedimento:["Ammolla il pane.","Taglia le verdure.","Condisci e lascia riposare."] },
+    { nome: "Pasta al pesto", ingredienti: [{nome:"pasta",qty:320,unit:"g"},{nome:"pesto",qty:4,unit:"cucchiai"},{nome:"parmigiano",qty:40,unit:"g"}], procedimento:["Cuoci la pasta.","Condisci con pesto e parmigiano."] },
+    { nome: "Pizza margherita", ingredienti: [{nome:"pizza",qty:1,unit:"pz"},{nome:"pomodoro",qty:200,unit:"g"},{nome:"mozzarella",qty:200,unit:"g"},{nome:"basilico",qty:1,unit:"pz"}], procedimento:["Stendi la base.","Condisci.","Cuoci a 250°C per 10 minuti."] },
+    { nome: "Uova al pomodoro", ingredienti: [{nome:"uova",qty:4,unit:"pz"},{nome:"pomodoro",qty:400,unit:"g"},{nome:"cipolla",qty:1,unit:"pz"},{nome:"olio",qty:2,unit:"cucchiai"}], procedimento:["Soffriggi la cipolla.","Aggiungi pomodoro.","Rompi le uova e cuoci."] },
+    { nome: "Minestrone", ingredienti: [{nome:"carota",qty:2,unit:"pz"},{nome:"patata",qty:2,unit:"pz"},{nome:"zucchina",qty:2,unit:"pz"},{nome:"cipolla",qty:1,unit:"pz"},{nome:"fagioli",qty:200,unit:"g"},{nome:"passata",qty:200,unit:"g"}], procedimento:["Taglia le verdure.","Soffriggi la cipolla.","Aggiungi tutto e cuoci 30 minuti."] },
+    { nome: "Risotto alla zucca", ingredienti: [{nome:"riso",qty:320,unit:"g"},{nome:"zucca",qty:400,unit:"g"},{nome:"cipolla",qty:1,unit:"pz"},{nome:"brodo",qty:1,unit:"l"},{nome:"parmigiano",qty:60,unit:"g"}], procedimento:["Soffriggi la cipolla.","Aggiungi zucca e riso.","Bagna col brodo.","Manteca."] },
+    { nome: "Pasta alla norma", ingredienti: [{nome:"pasta",qty:320,unit:"g"},{nome:"melanzana",qty:2,unit:"pz"},{nome:"pomodoro",qty:400,unit:"g"},{nome:"ricotta",qty:100,unit:"g"},{nome:"aglio",qty:2,unit:"pz"}], procedimento:["Friggi le melanzane.","Prepara il sugo.","Condisci la pasta."] }
+  ];
+
+  function ingredienteSoddisfatto(ingRicetta) {
+    const nomeR = ingRicetta.nome.toLowerCase();
+    if (isSempreDisponibile(nomeR)) {
+      const inDispensa = dispensa.find(d => d.name.toLowerCase().includes(nomeR) || nomeR.includes(d.name.toLowerCase()));
+      if (!inDispensa) return true;
+      if (ingRicetta.qty && inDispensa.qty && ingRicetta.unit === inDispensa.unit) {
+        const conv = (q, u) => u === "kg" ? q*1000 : u === "l" ? q*1000 : q;
+        return conv(inDispensa.qty, inDispensa.unit) >= conv(ingRicetta.qty, ingRicetta.unit);
+      }
+      return true;
+    }
+    for (const d of dispensa) {
+      const nomeD = d.name.toLowerCase();
+      if (nomeD.includes(nomeR) || nomeR.includes(nomeD)) {
+        if (ingRicetta.qty && d.qty && ingRicetta.unit === d.unit) {
+          const conv = (q, u) => u === "kg" ? q*1000 : u === "l" ? q*1000 : q;
+          if (conv(d.qty, d.unit) >= conv(ingRicetta.qty, ingRicetta.unit)) return true;
+          continue;
+        }
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function renderRicette() {
+    const cont = document.getElementById("ricetteList");
+    cont.innerHTML = "";
+    const risultati = RICETTE.map(r => {
+      const mancanti = r.ingredienti.filter(ing => !ingredienteSoddisfatto(ing));
+      return { ...r, mancanti };
+    });
+    let filtrati = risultati;
+    if (filtro === "fattibili") filtrati = risultati.filter(r => r.mancanti.length === 0);
+    else if (filtro === "quasi") filtrati = risultati.filter(r => r.mancanti.length > 0 && r.mancanti.length <= 2);
+    filtrati.sort((a, b) => a.mancanti.length - b.mancanti.length);
+    if (filtrati.length === 0) {
+      cont.innerHTML = `<div class="empty">Nessuna ricetta in questa categoria.</div>`;
+      return;
+    }
+    filtrati.forEach(r => {
+      const div = document.createElement("div");
+      div.className = "ricetta";
+      let stato, statoClass;
+      if (r.mancanti.length === 0) { stato = "✅ Fattibile"; statoClass = "stato-ok"; }
+      else if (r.mancanti.length <= 2) { stato = `⚠️ Mancano ${r.mancanti.length}`; statoClass = "stato-quasi"; }
+      else { stato = `❌ Mancano ${r.mancanti.length}`; statoClass = "stato-no"; }
+      const ingMini = r.ingredienti.map(ing => {
+        const ok = ingredienteSoddisfatto(ing);
+        const isBase = isSempreDisponibile(ing.nome);
+        const label = ing.qty ? `${ing.qty}${ing.unit === "g" || ing.unit === "ml" ? ing.unit : " " + ing.unit} ${ing.nome}` : ing.nome;
+        return `<span class="${ok ? 'badge-have' : 'badge-miss'}">${label}${isBase ? " ∞" : ""}</span>`;
+      }).join(", ");
+      div.innerHTML = `
+        <div class="titolo">${r.nome}</div>
+        <span class="stato ${statoClass}">${stato}</span>
+        <div class="ingredienti-mini">${ingMini}</div>
+        ${r.mancanti.length > 0 ? `<div class="ingredienti-mini mancanti">Ti manca: ${r.mancanti.map(m=>m.nome).join(", ")}</div>` : ""}
+        <div class="ricetta-detail">
+          <h3>👨‍🍳 Procedimento</h3>
+          <ol>${r.procedimento.map(p => `<li>${p}</li>`).join("")}</ol>
+        </div>
+      `;
+      div.onclick = (e) => {
+        if (e.target.closest(".ricetta-detail")) return;
+        div.classList.toggle("open");
+      };
+      cont.appendChild(div);
+    });
+  }
+
+  function setFiltro(f) {
+    filtro = f;
+    document.querySelectorAll(".filter-bar button").forEach(x => x.classList.remove("active"));
+    document.getElementById("filtro" + (f === "tutte" ? "Tutte" : f === "fattibili" ? "Fattibili" : "Quasi")).classList.add("active");
+    renderRicette();
+  }
+
+  document.getElementById("generaBtn").onclick = generaRicetta;
+
+  // ===== SERVICE WORKER =====
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+
+  renderSpesa();
+  renderDispensa();
+</script>
+</body>
+</html>
