@@ -33,26 +33,24 @@ jobs:
           npm install -g cordova
           npm install -g cordova-res
 
-      - name: Crea progetto e genera icone automaticamente
+      - name: Crea progetto, genera icone e compila
         run: |
-          # Crea il progetto
           cordova create app com.tuonome.carrelloubriaco "Carrello Ubriaco"
-          
-          # Copia i file web
           cp index.html app/www/index.html
           cp manifest.json app/www/manifest.json
           cp sw.js app/www/sw.js
           
-          # Prepara la cartella resources come si aspetta cordova-res
           mkdir -p app/resources
           cp logo.png app/resources/icon.png
+          cp logo.png app/resources/splash.png
           
-          # Genera le icone automaticamente
           cd app
           cordova-res android --skip-config --copy
           
-          # Aggiungi la piattaforma e compila
           cordova platform add android
+          
+          sed -i 's|</platform>|<icon src="res/icon/android/ldpi.png" density="ldpi" /><icon src="res/icon/android/mdpi.png" density="mdpi" /><icon src="res/icon/android/hdpi.png" density="hdpi" /><icon src="res/icon/android/xhdpi.png" density="xhdpi" /><icon src="res/icon/android/xxhdpi.png" density="xxhdpi" /><icon src="res/icon/android/xxxhdpi.png" density="xxxhdpi" /></platform>|' config.xml
+          
           cordova build android
 
       - name: Carica l'APK
