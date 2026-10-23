@@ -42,7 +42,10 @@ jobs:
           cp sw.js app/www/sw.js
           cp logo.png app/www/logo.png
           
-          # Sostituisce l'icona di default con il tuo logo
+          # Crea le cartelle per le icone di Android
+          mkdir -p app/res/icon/android
+          
+          # Copia il logo in tutte le risoluzioni richieste da Android
           cp logo.png app/res/icon/android/ldpi.png
           cp logo.png app/res/icon/android/mdpi.png
           cp logo.png app/res/icon/android/hdpi.png
@@ -50,12 +53,18 @@ jobs:
           cp logo.png app/res/icon/android/xxhdpi.png
           cp logo.png app/res/icon/android/xxxhdpi.png
           
-          # Rimuove la schermata di avvio (splash screen) di default
-          rm -f app/res/screen/android/*.png
-          
-          # Compila l'APK
+          # Configura il file config.xml per usare il logo
           cd app
           cordova platform add android
+          
+          # Aggiunge la configurazione dell'icona al config.xml
+          # Usiamo sed per inserire la riga prima della chiusura del tag <platform name="android">
+          sed -i 's|</platform>|<icon src="res/icon/android/ldpi.png" density="ldpi" /><icon src="res/icon/android/mdpi.png" density="mdpi" /><icon src="res/icon/android/hdpi.png" density="hdpi" /><icon src="res/icon/android/xhdpi.png" density="xhdpi" /><icon src="res/icon/android/xxhdpi.png" density="xxhdpi" /><icon src="res/icon/android/xxxhdpi.png" density="xxxhdpi" /></platform>|' config.xml
+          
+          # Rimuove le immagini di splash screen di default (opzionale)
+          rm -f res/screen/android/*.png 2>/dev/null || true
+          
+          # Compila
           cordova build android
 
       - name: Carica l'APK
